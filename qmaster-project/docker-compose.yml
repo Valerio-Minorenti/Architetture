@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  ticket-service:
+    build: ./ticket-service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - queue-service
+  queue-service:
+    build: ./queue-service
+    ports:
+      - "5004:5004"
+    depends_on:
+      - redis
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"

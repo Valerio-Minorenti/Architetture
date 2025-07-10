@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket Service</title>
+</head>
+<body>
+    <h1>Benvenuto al Ticket Service</h1>
+    <form method="POST">
+        <button type="submit">Prendi un numero</button>
+    </form>
+
+    {% if ticket_info %}
+        {% if ticket_info.error %}
+            <p style="color:red;">{{ ticket_info.error }}</p>
+        {% else %}
+            <h2>Il tuo numero è: {{ ticket_info.number }}</h2>
+            <h3>Sportello assegnato: {{ ticket_info.queue_id }}</h3>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
