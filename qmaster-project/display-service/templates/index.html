@@ -1,23 +1,16 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Display Code</title>
+    <title>QMaster Display</title>
 </head>
 <body>
-    <h1>Visualizzazione Stato Code</h1>
-
+    <h1>Display Code Attive</h1>
     {% for queue in queues %}
-        <h2>Sportello {{ queue.id }}</h2>
-        <p><strong>Numero servito ora:</strong> {{ queue.current }}</p>
-        <p><strong>In attesa:</strong> 
-            {% if queue.waiting %}
-                {{ queue.waiting | join(', ') }}
-            {% else %}
-                Nessuno in attesa
-            {% endif %}
-        </p>
-        <hr>
+        <div style="border:1px solid #000; margin-bottom:10px; padding:10px;">
+            <h2>Coda: {{ queue.id }}</h2>
+            <p>In Servizio: <strong>{{ queue.serving }}</strong></p>
+            <p>In Attesa: {{ queue.waiting | join(', ') }}</p>
+        </div>
     {% endfor %}
 </body>
 </html>
