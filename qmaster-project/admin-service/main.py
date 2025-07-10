@@ -36,4 +36,7 @@ def index():
         except Exception as e:
             result = f"Errore di comunicazione con queue-service: {e}"
 
+
     return render_template("index.html", result=result)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5002)
