@@ -41,6 +41,13 @@ def assign_ticket(queue_id):
         "queue_id": queue_id,
         "ticket_number": ticket_number
     })
+@app.route('/queues/<queue_id>/status', methods=['POST'])
+def update_queue_status(queue_id):
+    status = request.json.get("status")
+    if status not in ['active', 'inactive']:
+        return jsonify({"error": "Stato non valido"}), 400
 
+    r.set(f"queue:{queue_id}:status", status)
+    return jsonify({"queue_id": queue_id, "status": status})
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004)

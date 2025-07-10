@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Sportello</title>
+</head>
+<body>
+    <h1>Gestione Sportello</h1>
+    <form method="POST">
+        <label for="queue_id">ID sportello:</label>
+        <input type="text" name="queue_id" required>
+
+        <br><br>
+        <button name="action" value="open">Apri sportello</button>
+        <button name="action" value="close">Chiudi sportello</button>
+        <button name="action" value="next">Chiama prossimo numero</button>
+    </form>
+
+    {% if result %}
+        <p><strong>{{ result }}</strong></p>
+    {% endif %}
+</body>
+</html>
