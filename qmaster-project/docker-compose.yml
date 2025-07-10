@@ -23,6 +23,13 @@ services:
       - "5002:5002"
     depends_on:
       - queue-service
+  display-service:
+    build: ./display-service
+    ports:
+      - "5003:5003"
+    depends_on:
+      - redis
+      - rabbitmq
   rabbitmq:
     image: rabbitmq:3-management
     ports:
