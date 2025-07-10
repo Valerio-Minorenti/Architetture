@@ -49,5 +49,13 @@ def update_queue_status(queue_id):
 
     r.set(f"queue:{queue_id}:status", status)
     return jsonify({"queue_id": queue_id, "status": status})
+@app.route('/queues/<queue_id>/next', methods=['POST'])
+def get_next_ticket(queue_id):
+    key = f"queue:{queue_id}:tickets"
+    if r.llen(key) == 0:
+        return jsonify({"error": "Nessun ticket in attesa"}), 404
+
+    ticket_number = r.lpop(key)
+    return jsonify({"ticket_number": ticket_number})
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004)
