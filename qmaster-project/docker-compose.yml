@@ -23,3 +23,8 @@ services:
       - "5002:5002"
     depends_on:
       - queue-service
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"     # Porta per connessioni app
+      - "15672:15672"   # Interfaccia web RabbitMQ
