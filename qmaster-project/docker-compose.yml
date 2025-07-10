@@ -30,8 +30,8 @@ services:
     depends_on:
       - redis
       - rabbitmq
-rabbitmq:
-  image: rabbitmq:3-management
-  ports:
-    - "5673:5672"       # host 5673 → container 5672
-    - "15673:15672"     # host 15673 → container 15672 (UI web)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5673:5672"       # host 5673 → container 5672
+      - "15673:15672"     # host 15673 → container 15672 (UI web)
