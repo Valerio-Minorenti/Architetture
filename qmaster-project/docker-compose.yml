@@ -35,3 +35,10 @@ services:
     ports:
       - "5673:5672"
       - "15673:15672"
+  ticket-online-service:
+    build: ./ticket-online-service
+    ports:
+      - "5005:5005"
+    depends_on:
+      - queue-service
+      - redis

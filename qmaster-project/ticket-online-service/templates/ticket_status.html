@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>Stato Ticket</title></head>
+<body>
+  <h2>Stato del tuo ticket</h2>
+  <p>Numero: <strong>{{ ticket_number }}</strong></p>
+  <p>Sportello: <strong>{{ queue_id }}</strong></p>
+  <p>Persone prima di te: {{ people_before }}</p>
+  {% if notify %}
+    <h3 style="color:red;">{{ notify }}</h3>
+  {% endif %}
+</body>
+</html>
