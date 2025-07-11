@@ -3,6 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <title>Ticket Service</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom, #fff9c4, #ffffff);
+            box-sizing: border-box;
+        }
+
+        body {
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #795548;
+            margin-bottom: 30px;
+        }
+
+        form {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(to bottom, #ffeb3b, #fbc02d);
+            color: #333;
+            font-weight: bold;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px #c49000;
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+        }
+
+        button:active {
+            box-shadow: 0 2px #c49000;
+            transform: translateY(2px);
+        }
+
+        .ticket-box, .error-box {
+            background: #fffde7;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .error-box {
+            background: #ffebee;
+            color: #c62828;
+            margin-top: 30px;
+        }
+
+        h2, h3 {
+            margin: 10px 0;
+            color: #5d4037;
+        }
+    </style>
 </head>
 <body>
     <h1>Benvenuto al Ticket Service</h1>
@@ -12,11 +76,16 @@
 
     {% if ticket_info %}
         {% if ticket_info.error %}
-            <p style="color:red;">{{ ticket_info.error }}</p>
+            <div class="error-box">
+                <strong>{{ ticket_info.error }}</strong>
+            </div>
         {% else %}
-            <h2>Il tuo numero è: {{ ticket_info.number }}</h2>
-            <h3>Sportello assegnato: {{ ticket_info.queue_id }}</h3>
+            <div class="ticket-box">
+                <h2>Il tuo numero è: {{ ticket_info.number }}</h2>
+                <h3>Sportello assegnato: {{ ticket_info.queue_id }}</h3>
+            </div>
         {% endif %}
     {% endif %}
 </body>
 </html>
+
