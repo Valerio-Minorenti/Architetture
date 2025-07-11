@@ -5,15 +5,17 @@ import json
 
 app = Flask(__name__)
 
-# Connessione a Redis (nome del servizio docker nella rete)
+# Redis client (nome host è quello del servizio docker)
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-# Funzione per pubblicare eventi su RabbitMQ
+# Funzione per inviare eventi a RabbitMQ
 def publish_event(message):
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host='rabbitmq', port=5672)
+        )
         channel = connection.channel()
-        channel.queue_declare(queue='queue_updates')  # Coda creata se non esiste
+        channel.queue_declare(queue='queue_updates')
         channel.basic_publish(
             exchange='',
             routing_key='queue_updates',
@@ -21,9 +23,9 @@ def publish_event(message):
         )
         connection.close()
     except Exception as e:
-        print(f"[RabbitMQ] Errore nella pubblicazione: {e}")
+        print(f"Errore durante la pubblicazione su RabbitMQ: {e}")
 
-# Restituisce le code attive con lunghezza della lista ticket
+# 🔹 Ritorna le code attive
 @app.route('/queues/active', methods=['GET'])
 def get_active_queues():
     active_queues = []
@@ -40,7 +42,7 @@ def get_active_queues():
 
     return jsonify(active_queues)
 
-# Assegna un ticket a una coda attiva
+# 🔹 Assegna un nuovo ticket a una coda
 @app.route('/queues/<queue_id>/assign', methods=['POST'])
 def assign_ticket(queue_id):
     status_key = f"queue:{queue_id}:status"
@@ -49,7 +51,6 @@ def assign_ticket(queue_id):
 
     number_key = f"queue:{queue_id}:last_number"
     ticket_number = r.incr(number_key)
-
     r.rpush(f"queue:{queue_id}:tickets", ticket_number)
 
     return jsonify({
@@ -57,7 +58,7 @@ def assign_ticket(queue_id):
         "ticket_number": ticket_number
     })
 
-# Aggiorna lo stato di una coda (attiva/inattiva)
+# 🔹 Aggiorna stato attivo/inattivo della coda
 @app.route('/queues/<queue_id>/status', methods=['POST'])
 def update_queue_status(queue_id):
     status = request.json.get("status")
@@ -67,7 +68,7 @@ def update_queue_status(queue_id):
     r.set(f"queue:{queue_id}:status", status)
     return jsonify({"queue_id": queue_id, "status": status})
 
-# Chiama il prossimo numero in attesa per la coda specificata
+# 🔹 Estrae il ticket da servire e lo pubblica su RabbitMQ
 @app.route('/queues/<queue_id>/next', methods=['POST'])
 def get_next_ticket(queue_id):
     key = f"queue:{queue_id}:tickets"
@@ -76,7 +77,7 @@ def get_next_ticket(queue_id):
 
     ticket_number = r.lpop(key)
 
-    # 🔔 Pubblica evento RabbitMQ
+    # 📣 Pubblica evento
     publish_event({
         "event": "ticket_called",
         "queue_id": queue_id,
@@ -85,6 +86,5 @@ def get_next_ticket(queue_id):
 
     return jsonify({"ticket_number": ticket_number})
 
-# Avvio del servizio
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004)
