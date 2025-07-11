@@ -53,6 +53,15 @@ def assign_ticket(queue_id):
     ticket_number = r.incr(number_key)
     r.rpush(f"queue:{queue_id}:tickets", ticket_number)
 
+    # 📊 Pubblica anche lo stato aggiornato (senza ticket servito)
+    remaining = r.llen(f"queue:{queue_id}:tickets")
+    publish_event({
+        "event": "ticket_assigned",
+        "queue_id": queue_id,
+        "ticket_number": int(ticket_number),
+        "remaining": remaining
+    })
+
     return jsonify({
         "queue_id": queue_id,
         "ticket_number": ticket_number
@@ -77,11 +86,15 @@ def get_next_ticket(queue_id):
 
     ticket_number = r.lpop(key)
 
-    # 📣 Pubblica evento
+    # 📊 Calcola quanti ticket sono ancora in attesa (dopo la rimozione)
+    remaining = r.llen(key)
+
+    # 📣 Pubblica evento anche con 'remaining'
     publish_event({
         "event": "ticket_called",
         "queue_id": queue_id,
-        "ticket_number": ticket_number
+        "ticket_number": int(ticket_number),
+        "remaining": remaining
     })
 
     return jsonify({"ticket_number": ticket_number})

@@ -42,3 +42,4 @@ services:
     depends_on:
       - queue-service
       - redis
+      - rabbitmq

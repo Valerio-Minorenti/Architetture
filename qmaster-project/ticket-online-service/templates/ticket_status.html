@@ -1,13 +1,41 @@
 <!DOCTYPE html>
-<html>
-<head><title>Stato Ticket</title></head>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Stato del Ticket</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
 <body>
-  <h2>Stato del tuo ticket</h2>
-  <p>Numero: <strong>{{ ticket_number }}</strong></p>
-  <p>Sportello: <strong>{{ queue_id }}</strong></p>
-  <p>Persone prima di te: {{ people_before }}</p>
-  {% if notify %}
-    <h3 style="color:red;">{{ notify }}</h3>
-  {% endif %}
+    <h1>Stato della tua coda</h1>
+    <p><strong>Coda:</strong> {{ queue_id }}</p>
+    <p><strong>Il tuo numero:</strong> {{ ticket_number }}</p>
+    <p><strong>Persone davanti a te:</strong> <span id="people_before">{{ people_before }}</span></p>
+    <p><strong>Notifica:</strong> <span id="notify">{{ notify or "🕒 Attesa in corso..." }}</span></p>
+
+    <script>
+        const socket = io();
+        const token = "{{ token }}";
+        const ticketNumber = Number("{{ ticket_number }}"); // 🔧 Passato come numero
+
+        const notifyEl = document.getElementById("notify");
+        const peopleBeforeEl = document.getElementById("people_before");
+
+        socket.on("connect", () => {
+            socket.emit("join", token);
+            console.log("🔌 Connesso al WebSocket con token:", token);
+        });
+
+        socket.on("update", (data) => {
+    console.log("📬 Messaggio ricevuto:", data);
+
+    if (data.ticket_number === ticketNumber) {
+        notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
+        peopleBeforeEl.innerText = "0";
+    } else if (data.remaining !== undefined && data.remaining <= 3 && data.ticket_number < ticketNumber) {
+        notifyEl.innerText = "⚠️ Il tuo turno si avvicina!";
+        peopleBeforeEl.innerText = data.remaining.toString();
+    }
+});
+    </script>
 </body>
 </html>

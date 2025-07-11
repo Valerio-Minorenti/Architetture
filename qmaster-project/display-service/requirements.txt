@@ -1,3 +1,5 @@
 flask
 redis
 pika
+flask_socketio
+eventlet

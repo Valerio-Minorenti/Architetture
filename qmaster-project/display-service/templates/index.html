@@ -1,84 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
+    <meta charset="UTF-8">
     <title>QMaster Display</title>
-<style>
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-        background: linear-gradient(to bottom, #b3d9ff, #ffffff);
-    }
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #b3d9ff, #ffffff);
+        }
 
-    body {
-        padding: 20px;
-        box-sizing: border-box;
-    }
+        body {
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-    h1 {
-        text-align: center;
-        color: #003366;
-        margin-bottom: 30px;
-    }
+        h1 {
+            text-align: center;
+            color: #003366;
+            margin-bottom: 30px;
+        }
 
-    .queue-box {
-        background: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        padding: 20px;
-        margin-bottom: 20px;
-    }
+        .queue-box {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
-    .queue-box h2 {
-        color: #005580;
-        margin-top: 0;
-    }
+        .queue-box h2 {
+            color: #005580;
+            margin-top: 0;
+        }
 
-    .info-box {
-        background: #f0f8ff;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin: 10px 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        font-size: 16px;
-    }
+        .info-box {
+            background: #f0f8ff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 16px;
+        }
 
-    .button-3d {
-        display: inline-block;
-        padding: 10px 20px;
-        margin-top: 10px;
-        background: linear-gradient(to bottom, #66b3ff, #0059b3);
-        color: white;
-        font-weight: bold;
-        border: none;
-        border-radius: 5px;
-        box-shadow: 0 4px #003d66;
-        cursor: pointer;
-        text-decoration: none;
-    }
+        .button-3d {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 10px;
+            background: linear-gradient(to bottom, #66b3ff, #0059b3);
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px #003d66;
+            cursor: pointer;
+            text-decoration: none;
+        }
 
-    .button-3d:active {
-        box-shadow: 0 2px #003d66;
-        transform: translateY(2px);
-    }
-</style>
+        .button-3d:active {
+            box-shadow: 0 2px #003d66;
+            transform: translateY(2px);
+        }
+    </style>
+</head>
 
 <body>
     <h1>Display Code Attive</h1>
+
     {% for queue in queues %}
-        <div class="queue-box">
+        <div class="queue-box" data-queue-id="{{ queue.id }}">
             <h2>Coda: {{ queue.id }}</h2>
             <div class="info-box">
-                In Servizio: <strong>{{ queue.serving }}</strong>
+                In Servizio: <strong class="serving">{{ queue.serving }}</strong>
             </div>
             <div class="info-box">
-                In Attesa: {{ queue.waiting | join(', ') }}
+                In Attesa: <span class="waiting">{{ queue.waiting | join(', ') }}</span>
             </div>
             <a href="#" class="button-3d">Dettagli</a>
         </div>
     {% endfor %}
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('display_update', (data) => {
+            const queueBox = document.querySelector(`[data-queue-id="${data.queue_id}"]`);
+
+            if (queueBox) {
+                queueBox.querySelector('.serving').innerText = data.serving;
+                queueBox.querySelector('.waiting').innerText = data.waiting_list.join(", ");
+            } else {
+                // Ricarica se la coda è nuova
+                location.reload();
+            }
+        });
+    </script>
 </body>
 </html>
-
-

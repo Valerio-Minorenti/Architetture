@@ -1,4 +1,8 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template
+from flask_socketio import SocketIO
 import redis
 import pika
 import json
@@ -6,11 +10,10 @@ import threading
 import time
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
-# Connessione a Redis
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-# Stato aggiornato dalle notifiche RabbitMQ
 display_data = {}
 
 def listen_to_rabbitmq():
@@ -33,17 +36,24 @@ def listen_to_rabbitmq():
                         "waiting_list": r.lrange(f"queue:{queue_id}:tickets", 0, -1)
                     }
 
+                    # 🔥 Invio aggiornamento via WebSocket
+                    socketio.emit('display_update', {
+                        "queue_id": queue_id,
+                        "serving": display_data[queue_id]["serving"],
+                        "waiting_list": display_data[queue_id]["waiting_list"]
+                    })
+
             channel.basic_consume(
                 queue='queue_updates',
                 on_message_callback=callback,
                 auto_ack=True
             )
 
-            print("✅ Connesso a RabbitMQ, in ascolto...")
+            print("✅ In ascolto su RabbitMQ...")
             channel.start_consuming()
 
         except pika.exceptions.AMQPConnectionError:
-            print("❌ RabbitMQ non disponibile, ritento tra 5 secondi...")
+            print("❌ Connessione a RabbitMQ fallita. Ritento tra 5s...")
             time.sleep(5)
 
 @app.route('/')
@@ -59,10 +69,8 @@ def index():
                 "serving": serving,
                 "waiting": waiting
             })
-
     return render_template("index.html", queues=active_queues)
 
 if __name__ == '__main__':
-    # Avvia il thread che ascolta RabbitMQ
     threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
-    app.run(host='0.0.0.0', port=5003)
+    socketio.run(app, host='0.0.0.0', port=5003)
