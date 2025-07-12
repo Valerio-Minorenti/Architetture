@@ -77,24 +77,33 @@
         const socket = io();
         const token = "{{ token }}";
         const ticketNumber = Number("{{ ticket_number }}");
-
+    
         const notifyEl = document.getElementById("notify");
         const peopleBeforeEl = document.getElementById("people_before");
-
+    
         socket.on("connect", () => {
             socket.emit("join", token);
             console.log("🔌 Connesso al WebSocket con token:", token);
         });
-
+    
+        // 🟢 Ricevi aggiornamenti diretti da RabbitMQ
         socket.on("update", (data) => {
-            console.log("📬 Messaggio ricevuto:", data);
-
             if (data.ticket_number === ticketNumber) {
                 notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
                 peopleBeforeEl.innerText = "0";
-            } else if (data.remaining !== undefined && data.remaining <= 3 && data.ticket_number < ticketNumber) {
-                notifyEl.innerText = "⚠ Il tuo turno si avvicina!";
-                peopleBeforeEl.innerText = data.remaining.toString();
+            }
+        });
+    
+        // 🔁 Ricevi aggiornamenti periodici ogni 3s
+        socket.on("status_update", (data) => {
+            if (data.notify) {
+                notifyEl.innerText = data.notify;
+            } else {
+                notifyEl.innerText = "🕒 Attesa in corso...";
+            }
+    
+            if (data.people_before !== undefined) {
+                peopleBeforeEl.innerText = data.people_before;
             }
         });
     </script>

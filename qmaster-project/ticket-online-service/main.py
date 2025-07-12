@@ -12,14 +12,11 @@ import pika
 import json
 
 app = Flask(__name__, template_folder='templates')
-socketio = SocketIO(app, async_mode="eventlet")  # 🟢 Specifica il motore async
+socketio = SocketIO(app, async_mode="eventlet")
 
-# Redis
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
-
 QUEUE_SERVICE_URL = "http://queue-service:5004"
 
-# Lock Redis
 def acquire_lock(lock_name, acquire_timeout=5, lock_timeout=5):
     identifier = str(uuid.uuid4())
     end = time.time() + acquire_timeout
@@ -33,7 +30,6 @@ def release_lock(lock_name, identifier):
     if r.get(lock_name) == identifier:
         r.delete(lock_name)
 
-# 🟢 Richiesta ticket
 @app.route('/', methods=['GET', 'POST'])
 def request_ticket():
     if request.method == 'POST':
@@ -68,7 +64,6 @@ def request_ticket():
 
     return render_template("index.html")
 
-# 🟢 Pagina stato utente
 @app.route('/status/<token>')
 def ticket_status(token):
     user_data = r.hgetall(f"user:{token}")
@@ -94,13 +89,11 @@ def ticket_status(token):
                            notify=notify,
                            token=token)
 
-# 🟢 WebSocket - unisciti alla "stanza" personale
 @socketio.on('join')
 def on_join(token):
     print(f"✅ Utente con token {token} si è unito alla stanza WebSocket.")
     join_room(token)
 
-# 🟢 Thread RabbitMQ listener
 def listen_to_rabbitmq():
     connection = None
     while not connection:
@@ -120,7 +113,6 @@ def listen_to_rabbitmq():
             queue_id = data['queue_id']
             ticket_number = int(data['ticket_number'])
 
-            # Cerca token associato al biglietto
             all_users = r.keys("user:*")
             for user_key in all_users:
                 user_data = r.hgetall(user_key)
@@ -140,9 +132,36 @@ def listen_to_rabbitmq():
     print("📡 Listener RabbitMQ attivo.")
     channel.start_consuming()
 
-# 🟢 Avvio del thread RabbitMQ
-threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
+def periodic_status_updates():
+    while True:
+        time.sleep(3)
+        all_users = r.keys("user:*")
+        for user_key in all_users:
+            token = user_key.replace("user:", "")
+            user_data = r.hgetall(user_key)
+            if not user_data:
+                continue
 
-# Avvio SocketIO server
+            queue_id = user_data['queue_id']
+            ticket_number = int(user_data['ticket_number'])
+
+            tickets = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
+            people_before = len([int(t) for t in tickets if int(t) < ticket_number])
+
+            if ticket_number not in map(int, tickets):
+                notify = "✅ È il tuo turno! Presentati allo sportello."
+            elif people_before <= 3:
+                notify = "⚠️ Il tuo turno si avvicina!"
+            else:
+                notify = None
+
+            socketio.emit("status_update", {
+                "people_before": people_before,
+                "notify": notify
+            }, room=token)
+
+threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
+threading.Thread(target=periodic_status_updates, daemon=True).start()
+
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5005)
