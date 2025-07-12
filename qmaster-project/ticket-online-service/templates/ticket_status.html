@@ -4,18 +4,79 @@
     <meta charset="UTF-8">
     <title>Stato del Ticket</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom, #b2dfdb, #ffffff);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body {
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #004d40;
+            margin-bottom: 40px;
+            font-size: 32px;
+        }
+
+        .ticket-status-box {
+            background: #ffffff;
+            width: 100%;
+            max-width: 500px;
+            padding: 30px 25px;
+            border-radius: 14px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .info-row {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .info-row strong {
+            color: #00695c;
+        }
+
+        #notify {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00796b;
+        }
+
+        @media (max-width: 600px) {
+            .ticket-status-box {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <h1>Stato della tua coda</h1>
-    <p><strong>Coda:</strong> {{ queue_id }}</p>
-    <p><strong>Il tuo numero:</strong> {{ ticket_number }}</p>
-    <p><strong>Persone davanti a te:</strong> <span id="people_before">{{ people_before }}</span></p>
-    <p><strong>Notifica:</strong> <span id="notify">{{ notify or "🕒 Attesa in corso..." }}</span></p>
+
+    <div class="ticket-status-box">
+        <div class="info-row"><strong>Coda:</strong> {{ queue_id }}</div>
+        <div class="info-row"><strong>Il tuo numero:</strong> {{ ticket_number }}</div>
+        <div class="info-row"><strong>Persone davanti a te:</strong> <span id="people_before">{{ people_before }}</span></div>
+        <div class="info-row"><strong>Notifica:</strong> <span id="notify">{{ notify or "🕒 Attesa in corso..." }}</span></div>
+    </div>
 
     <script>
         const socket = io();
         const token = "{{ token }}";
-        const ticketNumber = Number("{{ ticket_number }}"); // 🔧 Passato come numero
+        const ticketNumber = Number("{{ ticket_number }}");
 
         const notifyEl = document.getElementById("notify");
         const peopleBeforeEl = document.getElementById("people_before");
@@ -26,16 +87,16 @@
         });
 
         socket.on("update", (data) => {
-    console.log("📬 Messaggio ricevuto:", data);
+            console.log("📬 Messaggio ricevuto:", data);
 
-    if (data.ticket_number === ticketNumber) {
-        notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
-        peopleBeforeEl.innerText = "0";
-    } else if (data.remaining !== undefined && data.remaining <= 3 && data.ticket_number < ticketNumber) {
-        notifyEl.innerText = "⚠️ Il tuo turno si avvicina!";
-        peopleBeforeEl.innerText = data.remaining.toString();
-    }
-});
+            if (data.ticket_number === ticketNumber) {
+                notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
+                peopleBeforeEl.innerText = "0";
+            } else if (data.remaining !== undefined && data.remaining <= 3 && data.ticket_number < ticketNumber) {
+                notifyEl.innerText = "⚠ Il tuo turno si avvicina!";
+                peopleBeforeEl.innerText = data.remaining.toString();
+            }
+        });
     </script>
 </body>
 </html>
