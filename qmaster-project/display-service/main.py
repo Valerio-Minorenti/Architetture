@@ -112,8 +112,19 @@ def index():
                 "waiting": waiting
             })
     return render_template("index.html", queues=active_queues)
+def emit_removed_queues():
+    while True:
+        time.sleep(3)
+        active_ids = {key.split(":")[1] for key in r.keys("queue:*:status") if r.get(key) == "active"}
+        known_ids = set(display_data.keys())
 
+        removed_ids = known_ids - active_ids
+        for queue_id in removed_ids:
+            print(f"❌ Coda {queue_id} è stata chiusa, la rimuovo dal display.")
+            display_data.pop(queue_id, None)
+            socketio.emit("queue_closed", {"queue_id": queue_id})
 if __name__ == '__main__':
     threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
     threading.Thread(target=emit_all_queues, daemon=True).start()
+    threading.Thread(target=emit_removed_queues, daemon=True).start()
     socketio.run(app, host='0.0.0.0', port=5003)

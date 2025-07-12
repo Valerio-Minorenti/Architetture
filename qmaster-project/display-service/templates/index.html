@@ -93,8 +93,16 @@
                 queueBox.querySelector('.serving').innerText = data.serving;
                 queueBox.querySelector('.waiting').innerText = data.waiting_list.join(", ");
             } else {
-                // Ricarica se la coda è nuova
+                // Reload se la coda è nuova
                 location.reload();
+            }
+        });
+
+        socket.on('queue_closed', (data) => {
+            const queueBox = document.querySelector(`[data-queue-id="${data.queue_id}"]`);
+            if (queueBox) {
+                queueBox.remove();
+                console.log(`❌ Rimossa coda ${data.queue_id} dal DOM`);
             }
         });
     </script>
