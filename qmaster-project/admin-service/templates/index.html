@@ -81,20 +81,15 @@
     </style>
 </head>
 <body>
-    <h1>Gestione Sportello</h1>
+    <h1>Apri uno sportello</h1>
     <form method="POST">
-        <label for="queue_id">ID sportello:</label>
+        <label for="queue_id">ID Sportello:</label>
         <input type="text" name="queue_id" required>
-
-        <button name="action" value="open">Apri sportello</button>
-        <button name="action" value="close">Chiudi sportello</button>
-        <button name="action" value="next">Chiama prossimo numero</button>
+        <button type="submit">Apri</button>
     </form>
 
-    {% if result %}
-        <div class="result-box">
-            <strong>{{ result }}</strong>
-        </div>
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
     {% endif %}
 </body>
 </html>
