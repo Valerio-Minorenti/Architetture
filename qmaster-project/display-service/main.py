@@ -24,20 +24,21 @@ def emit_all_queues():
                 continue
 
             waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
-            serving = display_data.get(queue_id, {}).get("serving", "—")
+            serving = r.get(f"queue:{queue_id}:serving") or display_data.get(queue_id, {}).get("serving", "—")
 
             display_data.setdefault(queue_id, {
                 "serving": serving,
                 "waiting_list": []
             })
 
+            display_data[queue_id]["serving"] = serving
             display_data[queue_id]["waiting_list"] = waiting_list
 
-            print(f"📤 Aggiornamento forzato per coda {queue_id}: {waiting_list}")
+            print(f"📤 Aggiornamento forzato per coda {queue_id}: {waiting_list} | In servizio: {serving}")
 
             socketio.emit('display_update', {
                 "queue_id": queue_id,
-                "serving": display_data[queue_id]["serving"],
+                "serving": serving,
                 "waiting_list": waiting_list
             })
 
@@ -65,13 +66,17 @@ def listen_to_rabbitmq():
                     return
 
                 waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
+                serving = r.get(f"queue:{queue_id}:serving") or "—"
+
                 display_data.setdefault(queue_id, {
-                    "serving": "—",
+                    "serving": serving,
                     "waiting_list": []
                 })
 
                 if event_type == "ticket_called":
                     display_data[queue_id]["serving"] = ticket_number
+                elif event_type == "ticket_assigned":
+                    display_data[queue_id]["serving"] = serving
 
                 display_data[queue_id]["waiting_list"] = waiting_list
 
@@ -99,7 +104,7 @@ def index():
     for key in r.keys("queue:*:status"):
         queue_id = key.split(":")[1]
         if r.get(key) == "active":
-            serving = display_data.get(queue_id, {}).get("serving", "—")
+            serving = r.get(f"queue:{queue_id}:serving") or display_data.get(queue_id, {}).get("serving", "—")
             waiting = display_data.get(queue_id, {}).get("waiting_list", [])
             active_queues.append({
                 "id": queue_id,
