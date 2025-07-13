@@ -58,33 +58,85 @@ def listen_to_rabbitmq():
                 data = json.loads(body)
                 print("📩 Evento ricevuto:", data)
 
-                queue_id = data.get("queue_id")
                 event_type = data.get("event")
+                queue_id = data.get("queue_id")
                 ticket_number = data.get("ticket_number")
 
-                if not queue_id:
-                    return
+                if event_type == "ticket_called" and queue_id:
+                    serving = ticket_number
+                    waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
 
-                waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
-                serving = r.get(f"queue:{queue_id}:serving") or "—"
-
-                display_data.setdefault(queue_id, {
-                    "serving": serving,
-                    "waiting_list": []
-                })
-
-                if event_type == "ticket_called":
-                    display_data[queue_id]["serving"] = ticket_number
-                elif event_type == "ticket_assigned":
+                    display_data.setdefault(queue_id, {"serving": "—", "waiting_list": []})
                     display_data[queue_id]["serving"] = serving
+                    display_data[queue_id]["waiting_list"] = waiting_list
 
-                display_data[queue_id]["waiting_list"] = waiting_list
+                    socketio.emit('display_update', {
+                        "queue_id": queue_id,
+                        "serving": serving,
+                        "waiting_list": waiting_list
+                    })
 
-                socketio.emit('display_update', {
-                    "queue_id": queue_id,
-                    "serving": display_data[queue_id]["serving"],
-                    "waiting_list": waiting_list
-                })
+                elif event_type == "ticket_assigned" and queue_id:
+                    serving = r.get(f"queue:{queue_id}:serving") or "—"
+                    waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
+
+                    display_data.setdefault(queue_id, {"serving": serving, "waiting_list": []})
+                    display_data[queue_id]["waiting_list"] = waiting_list
+
+                    socketio.emit('display_update', {
+                        "queue_id": queue_id,
+                        "serving": serving,
+                        "waiting_list": waiting_list
+                    })
+
+                elif event_type == "queue_closed_and_users_distributed":
+                    from_queue = data.get("from_queue")
+                    to_queues = data.get("to_queues", [])
+                    moved_users = data.get("moved_users", [])
+
+                    # Rimuovi la coda chiusa
+                    if from_queue in display_data:
+                        display_data.pop(from_queue)
+                        socketio.emit("queue_closed", {"queue_id": from_queue})
+                        print(f"❌ La coda '{from_queue}' è stata chiusa.")
+
+                    # Aggiorna le code di destinazione
+                    for qid in to_queues:
+                        waiting = r.lrange(f"queue:{qid}:tickets", 0, -1)
+                        serving = r.get(f"queue:{qid}:serving") or display_data.get(qid, {}).get("serving", "—")
+
+                        display_data[qid] = {
+                            "serving": serving,
+                            "waiting_list": waiting
+                        }
+
+                        socketio.emit('display_update', {
+                            "queue_id": qid,
+                            "serving": serving,
+                            "waiting_list": waiting
+                        })
+
+                    socketio.emit("notification", {
+                        "type": "distribution",
+                        "from_queue": from_queue,
+                        "to_queues": to_queues,
+                        "users": moved_users
+                    })
+
+                elif event_type == "queue_closed_no_target":
+                    from_queue = data.get("from_queue")
+                    moved_users = data.get("moved_users", [])
+
+                    if from_queue in display_data:
+                        display_data.pop(from_queue)
+                        socketio.emit("queue_closed", {"queue_id": from_queue})
+                        print(f"⚠️ Coda '{from_queue}' chiusa ma nessuna destinazione.")
+
+                    socketio.emit("notification", {
+                        "type": "no_target",
+                        "from_queue": from_queue,
+                        "users": moved_users
+                    })
 
             channel.basic_consume(
                 queue='queue_updates',
@@ -112,6 +164,7 @@ def index():
                 "waiting": waiting
             })
     return render_template("index.html", queues=active_queues)
+
 def emit_removed_queues():
     while True:
         time.sleep(3)
@@ -123,6 +176,7 @@ def emit_removed_queues():
             print(f"❌ Coda {queue_id} è stata chiusa, la rimuovo dal display.")
             display_data.pop(queue_id, None)
             socketio.emit("queue_closed", {"queue_id": queue_id})
+
 if __name__ == '__main__':
     threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
     threading.Thread(target=emit_all_queues, daemon=True).start()

@@ -2,10 +2,14 @@ from flask import Flask, jsonify, request
 import redis
 import pika
 import json
+import random
 
 app = Flask(__name__)
+
+# Connessione a Redis
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
+# Pubblica eventi su RabbitMQ
 def publish_event(message):
     try:
         connection = pika.BlockingConnection(
@@ -22,6 +26,7 @@ def publish_event(message):
     except Exception as e:
         print(f"Errore durante la pubblicazione su RabbitMQ: {e}")
 
+# 🔁 Ottieni tutte le code attive
 @app.route('/queues/active', methods=['GET'])
 def get_active_queues():
     active_queues = []
@@ -32,6 +37,7 @@ def get_active_queues():
             active_queues.append({"id": queue_id, "length": length})
     return jsonify(active_queues)
 
+# 🎫 Richiedi un nuovo ticket
 @app.route('/queues/<queue_id>/assign', methods=['POST'])
 def assign_ticket(queue_id):
     if r.get(f"queue:{queue_id}:status") != 'active':
@@ -54,6 +60,7 @@ def assign_ticket(queue_id):
         "ticket_number": ticket_number
     })
 
+# 🚪 Cambia stato coda (active/inactive) e distribuisci utenti in base al carico reale
 @app.route('/queues/<queue_id>/status', methods=['POST'])
 def update_queue_status(queue_id):
     status = request.json.get("status")
@@ -61,8 +68,69 @@ def update_queue_status(queue_id):
         return jsonify({"error": "Stato non valido"}), 400
 
     r.set(f"queue:{queue_id}:status", status)
+
+    if status == 'inactive':
+        # 1. Recupera utenti in attesa nella coda chiusa
+        utenti_da_spostare = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
+
+        # 2. Recupera tutte le code attive (escluse la corrente)
+        code_attive = {}
+        for key in r.scan_iter("queue:*:status"):
+            other_id = key.split(":")[1]
+            if other_id != queue_id and r.get(key) == "active":
+                code_attive[other_id] = True  # solo ID, carico lo ricalcoliamo ogni volta
+
+        if code_attive:
+            # 3. Distribuzione dinamica aggiornata a ogni ciclo
+            for utente in utenti_da_spostare:
+                # Ricalcola il carico aggiornato di ogni coda
+                carichi_correnti = {
+                    qid: r.llen(f"queue:{qid}:tickets")
+                    for qid in code_attive
+                }
+
+                min_len = min(carichi_correnti.values())
+                code_minime = [qid for qid, length in carichi_correnti.items() if length == min_len]
+
+                scelta = random.choice(code_minime)
+                r.rpush(f"queue:{scelta}:tickets", utente)
+
+            # 4. Pulisce la coda chiusa
+            r.delete(f"queue:{queue_id}:tickets")
+
+            # 5. Notifica evento
+            publish_event({
+                "event": "queue_closed_and_users_distributed",
+                "from_queue": queue_id,
+                "to_queues": list(code_attive.keys()),
+                "moved_users": utenti_da_spostare
+            })
+
+            return jsonify({
+                "queue_id": queue_id,
+                "status": status,
+                "users_moved": utenti_da_spostare,
+                "distribution": {qid: r.lrange(f"queue:{qid}:tickets", 0, -1) for qid in code_attive}
+            })
+
+        else:
+            # Nessuna coda attiva disponibile
+            publish_event({
+                "event": "queue_closed_no_target",
+                "from_queue": queue_id,
+                "moved_users": utenti_da_spostare
+            })
+
+            return jsonify({
+                "queue_id": queue_id,
+                "status": status,
+                "users_moved": utenti_da_spostare,
+                "distribution": None
+            })
+
     return jsonify({"queue_id": queue_id, "status": status})
 
+# 📣 Chiama il prossimo utente
 @app.route('/queues/<queue_id>/next', methods=['POST'])
 def get_next_ticket(queue_id):
     key = f"queue:{queue_id}:tickets"
@@ -70,8 +138,6 @@ def get_next_ticket(queue_id):
         return jsonify({"error": "Nessun ticket in attesa"}), 404
 
     ticket_number = r.lpop(key)
-
-    # ⏺️ Salva il ticket attualmente servito su Redis
     r.set(f"queue:{queue_id}:serving", ticket_number)
 
     remaining_list = r.lrange(key, 0, -1)
@@ -85,5 +151,6 @@ def get_next_ticket(queue_id):
 
     return jsonify({"ticket_number": ticket_number})
 
+# ▶️ Avvio servizio Flask
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004)
