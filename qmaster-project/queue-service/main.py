@@ -70,20 +70,16 @@ def update_queue_status(queue_id):
     r.set(f"queue:{queue_id}:status", status)
 
     if status == 'inactive':
-        # 1. Recupera utenti in attesa nella coda chiusa
         utenti_da_spostare = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
 
-        # 2. Recupera tutte le code attive (escluse la corrente)
         code_attive = {}
         for key in r.scan_iter("queue:*:status"):
             other_id = key.split(":")[1]
             if other_id != queue_id and r.get(key) == "active":
-                code_attive[other_id] = True  # solo ID, carico lo ricalcoliamo ogni volta
+                code_attive[other_id] = True
 
         if code_attive:
-            # 3. Distribuzione dinamica aggiornata a ogni ciclo
             for utente in utenti_da_spostare:
-                # Ricalcola il carico aggiornato di ogni coda
                 carichi_correnti = {
                     qid: r.llen(f"queue:{qid}:tickets")
                     for qid in code_attive
@@ -95,10 +91,17 @@ def update_queue_status(queue_id):
                 scelta = random.choice(code_minime)
                 r.rpush(f"queue:{scelta}:tickets", utente)
 
-            # 4. Pulisce la coda chiusa
+                # 🔄 Aggiorna il token dell'utente (se esiste)
+                for token_key in r.scan_iter("user:*"):
+                    user_data = r.hgetall(token_key)
+                    if user_data.get("queue_id") == queue_id and user_data.get("ticket_number") == utente:
+                        r.hset(token_key, mapping={
+                            "queue_id": scelta,
+                            "ticket_number": utente
+                        })
+
             r.delete(f"queue:{queue_id}:tickets")
 
-            # 5. Notifica evento
             publish_event({
                 "event": "queue_closed_and_users_distributed",
                 "from_queue": queue_id,
@@ -114,7 +117,6 @@ def update_queue_status(queue_id):
             })
 
         else:
-            # Nessuna coda attiva disponibile
             publish_event({
                 "event": "queue_closed_no_target",
                 "from_queue": queue_id,

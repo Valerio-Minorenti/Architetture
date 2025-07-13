@@ -67,7 +67,7 @@
     <h1>Stato della tua coda</h1>
 
     <div class="ticket-status-box">
-        <div class="info-row"><strong>Coda:</strong> {{ queue_id }}</div>
+        <div class="info-row"><strong>Coda:</strong> <span id="queue_id">{{ queue_id }}</span></div>
         <div class="info-row"><strong>Il tuo numero:</strong> {{ ticket_number }}</div>
         <div class="info-row"><strong>Persone davanti a te:</strong> <span id="people_before">{{ people_before }}</span></div>
         <div class="info-row"><strong>Notifica:</strong> <span id="notify">{{ notify or "🕒 Attesa in corso..." }}</span></div>
@@ -77,33 +77,39 @@
         const socket = io();
         const token = "{{ token }}";
         const ticketNumber = Number("{{ ticket_number }}");
-    
+
         const notifyEl = document.getElementById("notify");
         const peopleBeforeEl = document.getElementById("people_before");
-    
+        const queueIdEl = document.getElementById("queue_id");
+
         socket.on("connect", () => {
             socket.emit("join", token);
             console.log("🔌 Connesso al WebSocket con token:", token);
         });
-    
-        // 🟢 Ricevi aggiornamenti diretti da RabbitMQ
+
+        // 🟢 Evento specifico per il proprio turno
         socket.on("update", (data) => {
             if (data.ticket_number === ticketNumber) {
                 notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
                 peopleBeforeEl.innerText = "0";
+                queueIdEl.innerText = data.queue_id;
             }
         });
-    
-        // 🔁 Ricevi aggiornamenti periodici ogni 3s
+
+        // 🔁 Aggiornamento ogni 3s dal backend
         socket.on("status_update", (data) => {
             if (data.notify) {
                 notifyEl.innerText = data.notify;
             } else {
                 notifyEl.innerText = "🕒 Attesa in corso...";
             }
-    
+
             if (data.people_before !== undefined) {
                 peopleBeforeEl.innerText = data.people_before;
+            }
+
+            if (data.queue_id) {
+                queueIdEl.innerText = data.queue_id;
             }
         });
     </script>

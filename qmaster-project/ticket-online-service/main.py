@@ -157,7 +157,8 @@ def periodic_status_updates():
 
             socketio.emit("status_update", {
                 "people_before": people_before,
-                "notify": notify
+                "notify": notify,
+                "queue_id": queue_id
             }, room=token)
 
 threading.Thread(target=listen_to_rabbitmq, daemon=True).start()
