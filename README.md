@@ -135,3 +135,39 @@ Di seguito sono riportati gli step principali che hanno portato alla realizzazio
 •	Verifica del comportamento in ambiente simulato.
 •	Preparazione istruzioni per avvio locale del PoC.
 
+## Guida all' esecuzione
+
+Dopo aver importato tutti i codici è necessario scaricare un interprete python ed eseguire il codice. Le librerie necessarie sono: requests, flask, flask_socketio, api, eventlet, redis. 
+Prima di eseguire il codice è necessario scaricare la versione di Docker per il Desktop e di avviarlo. Una volta faccio ciò bisogna eseguire i seguenti comandi da terminale all'interno della cartella:
+
+• docker-compose down -v --remove-orphans: rimuove tutto ciò legato a vecchie esecuzioni, pulisce l'ambiente;
+
+• docker-compose build --no-cache: dopo ogni modifica e prima di iniziare il codice deve essere eseguito;
+
+• docker-compose up: lancia il programma.
+
+Per visualizzare i vari servi bisogna usare le seguenti porte, che possono essere cambiate:
+
+• Porta 5001: Ticket Presenza;
+
+• Porta 5002: Admin Service;
+
+• Porta 5003: Display Service;
+
+• Porta 5005: Ticket Online Service.
+
+Mentre per monitorare il flusso dei dati si può usare rabbit alla Porta 15673
+## Conclusioni e Sviluppi Futuri
+L'esito del progetto è stati positivo, infatti tutti i servizi sono funzionanti. Per quanto riguarda il futuro, di seguito sono elencati i punti principali:
+
+• Integrazione di un load balancer per gestire il traffico tra più istanze dei servizi;
+
+• Permettere l’apertura/chiusura delle postazioni in automatico, in base a parametri dinamici (numero utenti in coda, orari, disponibilità operatori);
+
+• Si può estendere il sistema aggiungendo un database relazionale (PostgreSQL o MySQL) o un database NoSQL (MongoDB) per conservare lo storico dei ticket e code;
+
+• Oltre alla pagina web, aggiungere supporto per notifiche via Email, SMS;
+
+• Integrazione di un modulo calendario/prenotazioni per utenti che vogliono scegliere giorno e ora.
+
+
