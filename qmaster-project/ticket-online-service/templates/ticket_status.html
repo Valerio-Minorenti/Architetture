@@ -90,7 +90,7 @@
         // 🟢 Evento specifico per il proprio turno
         socket.on("update", (data) => {
             if (data.ticket_number === ticketNumber) {
-                notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello.";
+                notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello ";
                 peopleBeforeEl.innerText = "0";
                 queueIdEl.innerText = data.queue_id;
             }
