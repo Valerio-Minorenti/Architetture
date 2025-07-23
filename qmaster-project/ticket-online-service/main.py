@@ -70,7 +70,8 @@ def ticket_status(token):
     if not user_data:
         return "Token non valido."
 
-    queue_id = user_data['queue_id']
+    # Rileggi queue_id aggiornato da Redis
+    queue_id = r.hget(f"user:{token}", "queue_id")
     ticket_number = int(user_data['ticket_number'])
 
     tickets = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
@@ -142,8 +143,12 @@ def periodic_status_updates():
             if not user_data:
                 continue
 
-            queue_id = user_data['queue_id']
+                        # Recupera ticket_number statico (quello non cambia)
             ticket_number = int(user_data['ticket_number'])
+
+            # ⚠ Rileggi queue_id aggiornato (potrebbe essere cambiato dopo spostamento)
+            # esegui questa riga *dopo* ticket_number
+            queue_id = r.hget(f"user:{token}", "queue_id")
 
             tickets = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
             people_before = len([int(t) for t in tickets if int(t) < ticket_number])

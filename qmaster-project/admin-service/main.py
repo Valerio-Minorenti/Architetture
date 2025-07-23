@@ -86,10 +86,12 @@ def gestione(queue_id):
                 res = requests.post(f"{QUEUE_SERVICE_URL}/queues/{queue_id}/status", json={"status": "inactive"})
                 if res.ok:
                     data = res.json()
-                    if data.get("destination"):
-                        result = f"Coda chiusa. Utenti spostati nella coda: {data['destination']}"
-                    else:
-                        result = "Coda chiusa. Nessuna coda attiva trovata per lo spostamento utenti."
+                    distribution = data.get("distribution")
+
+                    if distribution:
+                        queues = ", ".join(distribution.keys())
+                        result = f"Coda chiusa. Utenti spostati nelle code: {queues}"
+                    
                 else:
                     result = res.text
 
