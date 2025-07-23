@@ -29,7 +29,7 @@ Il sistema è composto da una serie di servizi che hanno una responsabilità chi
 
 • Queue Service: Si occupa dello stato delle code, l'assegnazione dei numeri, chiusura e apertura delle code e riallocazione degli utenti;
 
-• Ticket Online Service: permette agli utenti di richiedere un ticket tramite un'interfaccia web e di ricevere delle notifiche sullo stato della coda e il proprio turno;
+• (OPZIONALE) Ticket Online Service: permette agli utenti di richiedere un ticket tramite un'interfaccia web e di ricevere delle notifiche sullo stato della coda e il proprio turno;
 
 • Ticket Service: permette all'utente di ottenere un biglietto e di essere allocato aautomaticamente;
 
@@ -97,7 +97,7 @@ Di seguito sono riportati gli step principali che hanno portato alla realizzazio
 • Pagina di gestione della coda
 
 • Comunicazione REST tra Admin e Queue Service
-### Milestone 4 - Ticket Online Service
+### Milestone 4 - (OPZIONALE) Ticket Online Service
 • Sviluppo del Ticket Online Service;
 
 • Assegnazione automatica della coda con meno carico;
@@ -154,7 +154,7 @@ Per visualizzare i vari servi bisogna usare le seguenti porte, che possono esser
 
 • Porta 5003: Display Service;
 
-• Porta 5005: Ticket Online Service.
+• Porta 5005: Ticket Online Service (OPZIONALE) .
 
 Mentre per monitorare il flusso dei dati si può usare rabbit alla Porta 15673
 ## Conclusioni e Sviluppi Futuri
