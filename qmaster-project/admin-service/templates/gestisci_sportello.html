@@ -68,11 +68,25 @@
 </head>
 <body>
     <h1>Gestione dello Sportello: {{ queue_id }}</h1>
-
     <form method="POST">
         <button name="action" value="next">Chiama Prossimo</button>
         <button name="action" value="close">Chiudi Sportello</button>
     </form>
+    <!-- Bottone Logout sotto le azioni -->
+    <a href="{{ url_for('logout') }}" style="
+display: inline-block;
+margin-top: 10px;
+padding: 10px 20px;
+background: linear-gradient(to bottom, #ef5350, #c62828);
+color: white;
+font-weight: bold;
+border-radius: 8px;
+box-shadow: 0 4px #9a0007;
+text-decoration: none;
+font-size: 16px;
+text-align: center;
+width: 200px;
+">Logout</a>
 
     {% if result %}
         <p><strong>{{ result }}</strong></p>
