@@ -100,6 +100,6 @@ def gestione(queue_id):
 
     return render_template("gestisci_sportello.html", queue_id=queue_id, result=result)
 
-# ▶️ Avvio servizio
+#  Avvio servizio
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)
