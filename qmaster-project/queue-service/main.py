@@ -43,7 +43,9 @@ def assign_ticket(queue_id):
     if r.get(f"queue:{queue_id}:status") != 'active':
         return jsonify({"error": "Queue not active"}), 400
 
-    ticket_number = r.incr(f"queue:{queue_id}:last_number")
+    # Genera ticket globale univoco
+    ticket_number = r.incr("global_ticket_counter")
+
     r.rpush(f"queue:{queue_id}:tickets", ticket_number)
 
     waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
@@ -51,7 +53,7 @@ def assign_ticket(queue_id):
     publish_event({
         "event": "ticket_assigned",
         "queue_id": queue_id,
-        "ticket_number": int(ticket_number),
+        "ticket_number": ticket_number,
         "waiting_list": waiting_list
     })
 
