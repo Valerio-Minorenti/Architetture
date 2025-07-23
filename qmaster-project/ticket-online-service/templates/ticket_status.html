@@ -70,7 +70,7 @@
         <div class="info-row"><strong>Coda:</strong> <span id="queue_id">{{ queue_id }}</span></div>
         <div class="info-row"><strong>Il tuo numero:</strong> {{ ticket_number }}</div>
         <div class="info-row"><strong>Persone davanti a te:</strong> <span id="people_before">{{ people_before }}</span></div>
-        <div class="info-row"><strong>Notifica:</strong> <span id="notify">{{ notify or "🕒 Attesa in corso..." }}</span></div>
+        <div class="info-row"><strong>Notifica:</strong> <span id="notify">{{ notify or " Attesa in corso..." }}</span></div>
     </div>
 
     <script>
@@ -84,24 +84,24 @@
 
         socket.on("connect", () => {
             socket.emit("join", token);
-            console.log("🔌 Connesso al WebSocket con token:", token);
+            console.log("Connesso al WebSocket con token:", token);
         });
 
-        // 🟢 Evento specifico per il proprio turno
+        // Evento specifico per il proprio turno
         socket.on("update", (data) => {
             if (data.ticket_number === ticketNumber) {
-                notifyEl.innerText = "✅ È il tuo turno! Presentati allo sportello ";
+                notifyEl.innerText = " È il tuo turno! Presentati allo sportello ";
                 peopleBeforeEl.innerText = "0";
                 queueIdEl.innerText = data.queue_id;
             }
         });
 
-        // 🔁 Aggiornamento ogni 3s dal backend
+        //  Aggiornamento ogni 3s dal backend
         socket.on("status_update", (data) => {
             if (data.notify) {
                 notifyEl.innerText = data.notify;
             } else {
-                notifyEl.innerText = "🕒 Attesa in corso...";
+                notifyEl.innerText = " Attesa in corso...";
             }
 
             if (data.people_before !== undefined) {
