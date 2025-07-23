@@ -7,7 +7,7 @@ import random
 app = Flask(__name__)
 
 # Connessione a Redis
-r = redis.Redis(host='redis', port=6379, decode_responses=True)
+r = redis.Redis(host='redis', port=6379, decode_responses=True) #ottiene stringhe
 
 # Pubblica eventi su RabbitMQ
 def publish_event(message):
@@ -26,27 +26,29 @@ def publish_event(message):
     except Exception as e:
         print(f"Errore durante la pubblicazione su RabbitMQ: {e}")
 
-# 🔁 Ottieni tutte le code attive
+
+
+
 @app.route('/queues/active', methods=['GET'])
 def get_active_queues():
     active_queues = []
-    for status_key in r.keys("queue:*:status"):
+    for status_key in r.keys("queue:*:status"): #  Controlla le chiavi Redis del tipo queue:<id>:status.
         queue_id = status_key.split(":")[1]
-        if r.get(status_key) == 'active':
+        if r.get(status_key) == 'active': #	Se una coda è attiva prende il numero di ticket nella lista
             length = r.llen(f"queue:{queue_id}:tickets")
             active_queues.append({"id": queue_id, "length": length})
     return jsonify(active_queues)
 
-# 🎫 Richiedi un nuovo ticket
+# Richiede un nuovo ticket
 @app.route('/queues/<queue_id>/assign', methods=['POST'])
 def assign_ticket(queue_id):
     if r.get(f"queue:{queue_id}:status") != 'active':
         return jsonify({"error": "Queue not active"}), 400
 
     # Genera ticket globale univoco
-    ticket_number = r.incr("global_ticket_counter")
+    ticket_number = r.incr("global_ticket_counter") # r.incr("global_ticket_counter") per avere un ID univoco globale.
 
-    r.rpush(f"queue:{queue_id}:tickets", ticket_number)
+    r.rpush(f"queue:{queue_id}:tickets", ticket_number) #ticket  aggiunto in fondo alla lista Redis 
 
     waiting_list = r.lrange(f"queue:{queue_id}:tickets", 0, -1)
 
@@ -62,7 +64,8 @@ def assign_ticket(queue_id):
         "ticket_number": ticket_number
     })
 
-# 🚪 Cambia stato coda (active/inactive) e distribuisci utenti in base al carico reale
+
+#Cambia lo stato di una coda (active o inactive) e alloca urtnti.
 @app.route('/queues/<queue_id>/status', methods=['POST'])
 def update_queue_status(queue_id):
     status = request.json.get("status")
@@ -93,7 +96,7 @@ def update_queue_status(queue_id):
                 scelta = random.choice(code_minime)
                 r.rpush(f"queue:{scelta}:tickets", utente)
 
-                # 🔄 Aggiorna il token dell'utente (se esiste)
+                #  Aggiorna il token dell'utente (se esiste)
                 for token_key in r.scan_iter("user:*"):
                     user_data = r.hgetall(token_key)
                     if user_data.get("queue_id") == queue_id and user_data.get("ticket_number") == utente:
@@ -134,15 +137,15 @@ def update_queue_status(queue_id):
 
     return jsonify({"queue_id": queue_id, "status": status})
 
-# 📣 Chiama il prossimo utente
+#  Chiama il prossimo utente
 @app.route('/queues/<queue_id>/next', methods=['POST'])
 def get_next_ticket(queue_id):
     key = f"queue:{queue_id}:tickets"
     if r.llen(key) == 0:
         return jsonify({"error": "Nessun ticket in attesa"}), 404
 
-    ticket_number = r.lpop(key)
-    r.set(f"queue:{queue_id}:serving", ticket_number)
+    ticket_number = r.lpop(key) #  prossimo utente in attesa da una coda (lpop = prende il primo elemento).
+    r.set(f"queue:{queue_id}:serving", ticket_number) #Aggiorna il valore queue:<queue_id>:serving in Redis.
 
     remaining_list = r.lrange(key, 0, -1)
 
@@ -155,6 +158,6 @@ def get_next_ticket(queue_id):
 
     return jsonify({"ticket_number": ticket_number})
 
-# ▶️ Avvio servizio Flask
+# ▶ Avvio servizio Flask
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004)

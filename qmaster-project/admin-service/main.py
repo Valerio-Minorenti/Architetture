@@ -10,7 +10,7 @@ app.secret_key = "supersegreta"  # Cambia con una chiave forte in produzione
 QUEUE_SERVICE_URL = "http://queue-service:5004"
 CREDENTIALS_FILE = "credenziali.json"
 
-# 👮‍♂️ Decoratore per forzare il login
+#  Decoratore per forzare il login
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -19,7 +19,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# 🔐 Login
+#  Login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -40,13 +40,13 @@ def login():
 
     return render_template("login.html")
 
-# 🔓 Logout
+#  Logout
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# 🧭 Home page (protetta)
+#  Home page (protetta)
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -65,7 +65,7 @@ def index():
 
     return render_template("index.html")
 
-# 🛠 Gestione sportello (protetta)
+#  Gestione sportello (protetta)
 @app.route('/gestione/<queue_id>', methods=['GET', 'POST'])
 @login_required
 def gestione(queue_id):
@@ -78,7 +78,7 @@ def gestione(queue_id):
                 res = requests.post(f"{QUEUE_SERVICE_URL}/queues/{queue_id}/next")
                 data = res.json()
                 if res.ok:
-                    result = f"🎫 Numero chiamato: {data['ticket_number']}"
+                    result = f" Numero chiamato: {data['ticket_number']}"
                 else:
                     result = data.get("error", "Errore")
 

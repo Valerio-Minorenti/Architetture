@@ -34,7 +34,7 @@ def emit_all_queues():
             display_data[queue_id]["serving"] = serving
             display_data[queue_id]["waiting_list"] = waiting_list
 
-            print(f"📤 Aggiornamento forzato per coda {queue_id}: {waiting_list} | In servizio: {serving}")
+            print(f" Aggiornamento forzato per coda {queue_id}: {waiting_list} | In servizio: {serving}")
 
             socketio.emit('display_update', {
                 "queue_id": queue_id,
@@ -45,18 +45,18 @@ def emit_all_queues():
 def listen_to_rabbitmq():
     while True:
         try:
-            print("🔌 Connessione a RabbitMQ...")
+            print(" Connessione a RabbitMQ...")
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(host='rabbitmq', port=5672)
             )
             channel = connection.channel()
             channel.queue_declare(queue='queue_updates')
 
-            print("👂 In ascolto sulla coda 'queue_updates'")
+            print(" In ascolto sulla coda 'queue_updates'")
 
             def callback(ch, method, properties, body):
                 data = json.loads(body)
-                print("📩 Evento ricevuto:", data)
+                print(" Evento ricevuto:", data)
 
                 event_type = data.get("event")
                 queue_id = data.get("queue_id")
@@ -98,7 +98,7 @@ def listen_to_rabbitmq():
                     if from_queue in display_data:
                         display_data.pop(from_queue)
                         socketio.emit("queue_closed", {"queue_id": from_queue})
-                        print(f"❌ La coda '{from_queue}' è stata chiusa.")
+                        print(f" La coda '{from_queue}' è stata chiusa.")
 
                     # Aggiorna le code di destinazione
                     for qid in to_queues:
@@ -130,7 +130,7 @@ def listen_to_rabbitmq():
                     if from_queue in display_data:
                         display_data.pop(from_queue)
                         socketio.emit("queue_closed", {"queue_id": from_queue})
-                        print(f"⚠️ Coda '{from_queue}' chiusa ma nessuna destinazione.")
+                        print(f" Coda '{from_queue}' chiusa ma nessuna destinazione.")
 
                     socketio.emit("notification", {
                         "type": "no_target",
@@ -147,7 +147,7 @@ def listen_to_rabbitmq():
             channel.start_consuming()
 
         except pika.exceptions.AMQPConnectionError:
-            print("❌ Errore RabbitMQ. Ritento tra 5s...")
+            print(" Errore RabbitMQ. Ritento tra 5s...")
             time.sleep(5)
 
 @app.route('/')
@@ -173,7 +173,7 @@ def emit_removed_queues():
 
         removed_ids = known_ids - active_ids
         for queue_id in removed_ids:
-            print(f"❌ Coda {queue_id} è stata chiusa, la rimuovo dal display.")
+            print(f" Coda {queue_id} è stata chiusa, la rimuovo dal display.")
             display_data.pop(queue_id, None)
             socketio.emit("queue_closed", {"queue_id": queue_id})
 

@@ -79,9 +79,9 @@ def ticket_status(token):
 
     notify = None
     if len(waiting_before) <= 3:
-        notify = "⚠️ Il tuo turno si avvicina!"
+        notify = " Il tuo turno si avvicina!"
     if ticket_number not in map(int, tickets):
-        notify = "✅ È il tuo turno! Presentati allo sportello."
+        notify = " È il tuo turno! Presentati allo sportello."
 
     return render_template("ticket_status.html",
                            queue_id=queue_id,
@@ -92,17 +92,17 @@ def ticket_status(token):
 
 @socketio.on('join')
 def on_join(token):
-    print(f"✅ Utente con token {token} si è unito alla stanza WebSocket.")
+    print(f" Utente con token {token} si è unito alla stanza WebSocket.")
     join_room(token)
 
 def listen_to_rabbitmq():
     connection = None
     while not connection:
         try:
-            print("⏳ Connessione a RabbitMQ...")
+            print(" Connessione a RabbitMQ...")
             connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
         except pika.exceptions.AMQPConnectionError:
-            print("🔁 RabbitMQ non pronto. Riprovo tra 2s...")
+            print(" RabbitMQ non pronto. Riprovo tra 2s...")
             time.sleep(2)
 
     channel = connection.channel()
@@ -119,7 +119,7 @@ def listen_to_rabbitmq():
                 user_data = r.hgetall(user_key)
                 if user_data.get("queue_id") == queue_id and int(user_data.get("ticket_number")) == ticket_number:
                     token = user_key.replace("user:", "")
-                    print(f"📢 Notifico utente {token}: è il suo turno.")
+                    print(f" Notifico utente {token}: è il suo turno.")
                     socketio.emit('update', {
                         "event": "ticket_called",
                         "ticket_number": ticket_number,
@@ -127,10 +127,10 @@ def listen_to_rabbitmq():
                     }, room=token)
                     break
         except Exception as e:
-            print(f"❌ Errore nel callback RabbitMQ: {e}")
+            print(f" Errore nel callback RabbitMQ: {e}")
 
     channel.basic_consume(queue='queue_updates', on_message_callback=callback, auto_ack=True)
-    print("📡 Listener RabbitMQ attivo.")
+    print(" Listener RabbitMQ attivo.")
     channel.start_consuming()
 
 def periodic_status_updates():
@@ -154,9 +154,9 @@ def periodic_status_updates():
             people_before = len([int(t) for t in tickets if int(t) < ticket_number])
 
             if ticket_number not in map(int, tickets):
-                notify = "✅ È il tuo turno! Presentati allo sportello."
+                notify = " È il tuo turno! Presentati allo sportello."
             elif people_before <= 3:
-                notify = "⚠️ Il tuo turno si avvicina!"
+                notify = " Il tuo turno si avvicina!"
             else:
                 notify = None
 
