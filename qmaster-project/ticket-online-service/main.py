@@ -146,7 +146,7 @@ def periodic_status_updates():
                         # Recupera ticket_number statico (quello non cambia)
             ticket_number = int(user_data['ticket_number'])
 
-            # ⚠ Rileggi queue_id aggiornato (potrebbe essere cambiato dopo spostamento)
+            # Rileggi queue_id aggiornato (potrebbe essere cambiato dopo spostamento)
             # esegui questa riga *dopo* ticket_number
             queue_id = r.hget(f"user:{token}", "queue_id")
 
